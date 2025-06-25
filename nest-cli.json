@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/nestjs-recipe/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/nestjs-recipe/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/nestjs-recipe",
+  "projects": {
+    "auth": {
+      "type": "application",
+      "root": "apps/auth",
+      "entryFile": "main",
+      "sourceRoot": "apps/auth/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/auth/tsconfig.app.json"
+      }
+    },
+    "nestjs-recipe": {
+      "type": "application",
+      "root": "apps/nestjs-recipe",
+      "entryFile": "main",
+      "sourceRoot": "apps/nestjs-recipe/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/nestjs-recipe/tsconfig.app.json"
+      }
+    },
+    "recipe": {
+      "type": "application",
+      "root": "apps/recipe",
+      "entryFile": "main",
+      "sourceRoot": "apps/recipe/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/recipe/tsconfig.app.json"
+      }
+    },
+    "shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.lib.json"
+      }
+    },
+    "users": {
+      "type": "application",
+      "root": "apps/users",
+      "entryFile": "main",
+      "sourceRoot": "apps/users/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/users/tsconfig.app.json"
+      }
+    }
+  }
+}

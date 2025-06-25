@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - for Users microservice
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  firstName   String?
+  lastName    String?
+  bio         String?
+  avatar      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  recipes        Recipe[]
+  reviews        RecipeReview[]
+  authTokens     AuthToken[]
+  sessions       UserSession[]
+  authCredentials AuthCredential?
+
+  @@map("users")
+}
+
+// Recipe model - for Recipe microservice
+model Recipe {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  ingredients  String[] // Array of ingredient strings
+  instructions String[] // Array of instruction strings
+  cookingTime  String   // e.g., "30 minutes", "1 hour 15 minutes"
+  servings     Int
+  image        String   // URL to recipe image
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Foreign key
+  authorId     String
+  
+  // Relations
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories   RecipeCategory[]
+  tags         RecipeTag[]
+  reviews      RecipeReview[]
+
+  @@map("recipes")
+}
+
+// Recipe Category model
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  recipes   RecipeCategory[]
+
+  @@map("categories")
+}
+
+// Many-to-many relation between Recipe and Category
+model RecipeCategory {
+  id         String @id @default(cuid())
+  recipeId   String
+  categoryId String
+
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, categoryId])
+  @@map("recipe_categories")
+}
+
+// Tag model
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  recipes   RecipeTag[]
+
+  @@map("tags")
+}
+
+// Many-to-many relation between Recipe and Tag
+model RecipeTag {
+  id       String @id @default(cuid())
+  recipeId String
+  tagId    String
+
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, tagId])
+  @@map("recipe_tags")
+}
+
+// Recipe Review model
+model RecipeReview {
+  id        String   @id @default(cuid())
+  rating    Int      @db.SmallInt // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Foreign keys
+  recipeId  String
+  userId    String
+
+  // Relations
+  recipe    Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([recipeId, userId]) // One review per user per recipe
+  @@map("recipe_reviews")
+}
+
+// Auth Token model - for Auth microservice
+model AuthToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  type      TokenType
+  expiresAt DateTime
+  isRevoked Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  // Foreign key
+  userId    String
+  
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_tokens")
+}
+
+// User Session model - for Auth microservice
+model UserSession {
+  id          String   @id @default(cuid())
+  sessionId   String   @unique
+  userAgent   String?
+  ipAddress   String?
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Foreign key
+  userId      String
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// Auth Credentials model - for storing passwords separately
+model AuthCredential {
+  id             String   @id @default(cuid())
+  hashedPassword String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Foreign key
+  userId         String   @unique
+  
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_credentials")
+}
+
+// Enums
+enum TokenType {
+  ACCESS_TOKEN
+  REFRESH_TOKEN
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}

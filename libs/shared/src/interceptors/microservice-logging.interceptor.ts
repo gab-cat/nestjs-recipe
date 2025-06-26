@@ -39,25 +39,24 @@ export class MicroserviceLoggingInterceptor implements NestInterceptor {
     const { method, url, body, query, params, headers } = request;
     const startTime = Date.now();
 
-    // Log incoming request
-    // this.logger.log(
-    //   `Incoming Request: ${method} ${url}`,
-    //   JSON.stringify({
-    //     method,
-    //     url,
-    //     body: this.sanitizeBody(body),
-    //     query,
-    //     params,
-    //     headers: this.sanitizeHeaders(headers),
-    //     timestamp: new Date().toISOString(),
-    //   }),
-    // );
+    this.logger.log(
+      `[REQUEST] ${method} ${url}`,
+      //   JSON.stringify({
+      //     method,
+      //     url,
+      //     body: this.sanitizeBody(body),
+      //     query,
+      //     params,
+      //     headers: this.sanitizeHeaders(headers),
+      //     timestamp: new Date().toISOString(),
+      //   }),
+    );
 
     return next.handle().pipe(
       tap(() => {
         const responseTime = Date.now() - startTime;
         this.logger.log(
-          `Status: ${response.statusCode} - ${method} ${url} - Time: ${responseTime}ms`,
+          `[RESPONSE] ${method} ${url} - Status: ${response.statusCode} - Time: ${responseTime}ms`,
         );
       }),
       catchError((error: ErrorData) => {

@@ -1,16 +1,14 @@
 import { Controller, UseGuards } from '@nestjs/common';
 import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AUTH_PATTERNS, AUTH_EVENTS, HttpJwtAuthGuard } from '@app/shared';
 import {
-  LoginDto,
   RegisterDto,
   AuthResponse,
+  LoginDto,
   RefreshTokenDto,
   ChangePasswordDto,
-  AUTH_PATTERNS,
-  AUTH_EVENTS,
-} from '@app/shared';
+} from './models/auth.dto';
 
 @Controller()
 export class AuthController {
@@ -34,13 +32,13 @@ export class AuthController {
   }
 
   @MessagePattern(AUTH_PATTERNS.LOGOUT)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HttpJwtAuthGuard)
   logout(@Payload() data: { userId: string; refreshToken: string }): void {
     return this.authService.logout(data.userId, data.refreshToken);
   }
 
   @MessagePattern(AUTH_PATTERNS.CHANGE_PASSWORD)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(HttpJwtAuthGuard)
   async changePassword(
     @Payload() data: { userId: string; changePasswordDto: ChangePasswordDto },
   ): Promise<void> {

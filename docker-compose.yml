@@ -2,7 +2,9 @@ services:
   # Auth microservice
   auth-service:
     image: nestjs-recipe
-    command: ["bun", "run", "start:auth:prod"]
+    command: ['bun', '--bun', 'start:auth:prod']
+    environment:
+      - NODE_ENV=production
     env_file:
       - .env
     networks:
@@ -12,7 +14,9 @@ services:
   # Recipe microservice
   recipe-service:
     image: nestjs-recipe
-    command: ["bun", "run", "start:recipe:prod"]
+    command: ['bun', '--bun', 'start:recipe:prod']
+    environment:
+      - NODE_ENV=production
     env_file:
       - .env
     networks:
@@ -22,7 +26,9 @@ services:
   # Users microservice
   users-service:
     image: nestjs-recipe
-    command: ["bun", "run", "start:users:prod"]
+    command: ['bun', '--bun', 'start:users:prod']
+    environment:
+      - NODE_ENV=production
     env_file:
       - .env
     networks:
@@ -32,11 +38,16 @@ services:
   # API Gateway
   api-gateway:
     image: nestjs-recipe
-    command: ["bun", "run", "start:gateway:prod"]
+    command: ['bun', '--bun', 'start:gateway:prod']
+    environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_HOST=auth-service
+      - RECIPE_SERVICE_HOST=recipe-service
+      - USERS_SERVICE_HOST=users-service
     env_file:
       - .env
     ports:
-      - "3000:3000"
+      - '3000:3000'
     networks:
       - nestjs-recipe-network
     depends_on:
@@ -47,4 +58,4 @@ services:
 
 networks:
   nestjs-recipe-network:
-    driver: bridge 
+    driver: bridge

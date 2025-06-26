@@ -1,14 +1,13 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
 import { RecipeService } from './recipe.service';
+import { RECIPE_PATTERNS, RECIPE_EVENTS } from '@app/shared';
 import {
   CreateRecipeDto,
   UpdateRecipeDto,
   Recipe,
   RecipeWithAuthor,
-  RECIPE_PATTERNS,
-  RECIPE_EVENTS,
-} from '@app/shared';
+} from './models/recipe.dto';
 
 @Controller()
 export class RecipeController {
@@ -39,10 +38,10 @@ export class RecipeController {
 
   @MessagePattern(RECIPE_PATTERNS.FIND_RECIPES_BY_AUTHOR)
   async findRecipesByAuthor(
-    @Payload() data: { authorId: string; page?: number; limit?: number },
+    @Payload() data: { email: string; page?: number; limit?: number },
   ): Promise<Recipe[]> {
-    const { authorId, page = 1, limit = 10 } = data;
-    return this.recipeService.findRecipesByAuthor(authorId, page, limit);
+    const { email, page = 1, limit = 10 } = data;
+    return this.recipeService.findRecipesByAuthor(email, page, limit);
   }
 
   @MessagePattern(RECIPE_PATTERNS.FIND_RECIPE_BY_ID)
@@ -52,17 +51,24 @@ export class RecipeController {
     return this.recipeService.findRecipeById(data.id);
   }
 
+  @MessagePattern(RECIPE_PATTERNS.FIND_RECIPE_BY_SLUG)
+  async findRecipeBySlug(
+    @Payload() data: { slug: string },
+  ): Promise<RecipeWithAuthor> {
+    return this.recipeService.findRecipeBySlug(data.slug);
+  }
+
   @MessagePattern(RECIPE_PATTERNS.UPDATE_RECIPE)
   async updateRecipe(
     @Payload()
     data: {
-      id: string;
+      slug: string;
       authorId: string;
       updateRecipeDto: UpdateRecipeDto;
     },
   ): Promise<Recipe> {
     return this.recipeService.updateRecipe(
-      data.id,
+      data.slug,
       data.authorId,
       data.updateRecipeDto,
     );
@@ -70,9 +76,9 @@ export class RecipeController {
 
   @MessagePattern(RECIPE_PATTERNS.DELETE_RECIPE)
   async deleteRecipe(
-    @Payload() data: { id: string; authorId: string },
-  ): Promise<void> {
-    return this.recipeService.deleteRecipe(data.id, data.authorId);
+    @Payload() data: { slug: string; authorId: string },
+  ): Promise<{ success: boolean; message: string }> {
+    return this.recipeService.deleteRecipe(data.slug, data.authorId);
   }
 
   @MessagePattern(RECIPE_PATTERNS.TEST)

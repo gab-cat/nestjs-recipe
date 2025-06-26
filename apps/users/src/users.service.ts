@@ -1,52 +1,18 @@
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { PrismaService } from '@app/shared';
 import {
-  Injectable,
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
-import { PrismaService, RecipeSummary } from '@app/shared';
-import { CreateUserDto, UpdateUserDto, User, SafeUserDto } from '@app/shared';
+  UpdateUserDto,
+  User,
+  SafeUserDto,
+  UserWithRecipesDto,
+} from './models/user.dto';
+import { Recipe } from 'generated/prisma';
+import { RpcException } from '@nestjs/microservices';
+import { RecipeDto } from 'apps/recipe/src/models/recipe.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async createUser(createUserDto: CreateUserDto): Promise<SafeUserDto> {
-    const { email, username, password, ...userData } = createUserDto;
-
-    // Check if user already exists
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { username }],
-      },
-    });
-
-    if (existingUser) {
-      if (existingUser.email === email) {
-        throw new ConflictException('Email already exists');
-      }
-      if (existingUser.username === username) {
-        throw new ConflictException('Username already exists');
-      }
-    }
-
-    // Password handling should be done by auth service during registration
-    if (password) {
-      throw new BadRequestException(
-        'Password should not be provided when creating user directly. Use auth service for registration.',
-      );
-    }
-
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        username,
-        ...userData,
-      },
-    });
-
-    return this.mapToSafeUserDto(user as User);
-  }
 
   async findAllUsers(page = 1, limit = 10): Promise<SafeUserDto[]> {
     const skip = (page - 1) * limit;
@@ -71,22 +37,34 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with ID ${id} not found`,
+      });
     }
 
     return this.mapToSafeUserDto(user as User);
   }
 
-  async findUserByEmail(email: string): Promise<User | null> {
+  async findUserByEmail(email: string): Promise<UserWithRecipesDto> {
     const user = await this.prisma.user.findUnique({
       where: { email },
+      include: {
+        recipes: true,
+      },
     });
 
     if (!user) {
-      return null;
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with email ${email} not found`,
+      });
     }
 
-    return this.mapToUser(user as User);
+    return {
+      ...this.mapToSafeUserDto(user as User),
+      recipes: user.recipes.map((recipe) => this.mapToRecipeDto(recipe)),
+    };
   }
 
   async findUserByUsername(username: string): Promise<SafeUserDto> {
@@ -95,44 +73,52 @@ export class UsersService {
     });
 
     if (!user) {
-      throw new NotFoundException(`User with username ${username} not found`);
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with username ${username} not found`,
+      });
     }
 
     return this.mapToSafeUserDto(user as User);
   }
 
   async updateUser(
-    id: string,
+    email: string,
     updateUserDto: UpdateUserDto,
   ): Promise<SafeUserDto> {
     const existingUser = await this.prisma.user.findUnique({
-      where: { id },
+      where: { email },
     });
 
     if (!existingUser) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with email ${email} not found`,
+      });
     }
 
     const updatedUser = await this.prisma.user.update({
-      where: { id },
+      where: { email },
       data: updateUserDto,
     });
 
     return this.mapToSafeUserDto(updatedUser as User);
   }
 
-  async deactivateUser(id: string): Promise<void> {
+  async deleteUser(email: string): Promise<void> {
     const existingUser = await this.prisma.user.findUnique({
-      where: { id },
+      where: { email },
     });
 
     if (!existingUser) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with email ${email} not found`,
+      });
     }
 
-    await this.prisma.user.update({
-      where: { id },
-      data: { isActive: false },
+    await this.prisma.user.delete({
+      where: { email },
     });
   }
 
@@ -166,37 +152,24 @@ export class UsersService {
     return users.map((user) => this.mapToSafeUserDto(user as User));
   }
 
-  async getUserProfile(
-    id: string,
-  ): Promise<SafeUserDto & { recipes: RecipeSummary[] }> {
+  async getUserProfile(id: string): Promise<UserWithRecipesDto> {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
-        recipes: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            createdAt: true,
-          },
-          where: {
-            isPublished: true,
-          },
-          take: 5,
-          orderBy: {
-            createdAt: 'desc',
-          },
-        },
+        recipes: true,
       },
     });
 
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new RpcException({
+        statusCode: HttpStatus.NOT_FOUND,
+        message: `User with ID ${id} not found`,
+      });
     }
 
     return {
       ...this.mapToSafeUserDto(user as User),
-      recipes: user.recipes,
+      recipes: user.recipes.map((recipe) => this.mapToRecipeDto(recipe)),
     };
   }
 
@@ -212,6 +185,24 @@ export class UsersService {
       lastName: user.lastName || '',
       bio: user.bio || '',
       avatar: user.avatar || '',
+    };
+  }
+
+  private mapToRecipeDto(recipe: Recipe): RecipeDto {
+    return {
+      id: recipe.id,
+      slug: recipe.slug,
+      name: recipe.name,
+      description: recipe.description || '',
+      ingredients: recipe.ingredients,
+      instructions: recipe.instructions,
+      cookingTime: recipe.cookingTime,
+      servings: recipe.servings,
+      image: recipe.image,
+      isPublished: recipe.isPublished,
+      authorId: recipe.authorId,
+      createdAt: recipe.createdAt,
+      updatedAt: recipe.updatedAt,
     };
   }
 

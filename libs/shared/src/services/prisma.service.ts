@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '../../../../generated/prisma/client';
+import { AppConfigService } from './config.service';
 
 /**
  * Service that provides a PrismaClient instance with NestJS lifecycle hooks.
@@ -9,11 +10,12 @@ export class PrismaService
   extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
-  constructor() {
+  constructor(private readonly configService: AppConfigService) {
+    const databaseConfig = configService.getDatabaseConfig();
     super({
       datasources: {
         db: {
-          url: process.env.DATABASE_URL,
+          url: databaseConfig.url,
         },
       },
     });

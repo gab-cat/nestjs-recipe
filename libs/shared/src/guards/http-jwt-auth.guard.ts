@@ -33,19 +33,23 @@ export class HttpJwtAuthGuard implements CanActivate {
     }
 
     try {
-      const user: {
-        id: string;
-        email: string;
-        username: string;
+      const {
+        user,
+      }: {
+        user: {
+          id: string;
+          email: string;
+          username: string;
+        };
       } = await firstValueFrom(
         this.authClient.send(AUTH_PATTERNS.VALIDATE_TOKEN, { token }),
       );
 
       // Attach user to request for use in controllers
-      request.user = user as {
-        id: string;
-        email: string;
-        username: string;
+      request.user = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
       };
       return true;
     } catch {

@@ -1,25 +1,16 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
+import { USERS_PATTERNS, USERS_EVENTS } from '@app/shared';
 import {
-  CreateUserDto,
   UpdateUserDto,
-  USERS_PATTERNS,
-  USERS_EVENTS,
   SafeUserDto,
-  RecipeSummary,
-} from '@app/shared';
+  UserWithRecipesDto,
+} from './models/user.dto';
 
 @Controller()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @MessagePattern(USERS_PATTERNS.CREATE_USER)
-  async createUser(
-    @Payload() createUserDto: CreateUserDto,
-  ): Promise<SafeUserDto> {
-    return this.usersService.createUser(createUserDto);
-  }
 
   @MessagePattern(USERS_PATTERNS.FIND_ALL_USERS)
   async findAllUsers(
@@ -43,7 +34,9 @@ export class UsersController {
   }
 
   @MessagePattern(USERS_PATTERNS.FIND_USER_BY_EMAIL)
-  async findUserByEmail(@Payload() data: { email: string }) {
+  async findUserByEmail(
+    @Payload() data: { email: string },
+  ): Promise<UserWithRecipesDto> {
     return this.usersService.findUserByEmail(data.email);
   }
 
@@ -57,20 +50,20 @@ export class UsersController {
   @MessagePattern(USERS_PATTERNS.GET_USER_PROFILE)
   async getUserProfile(
     @Payload() data: { id: string },
-  ): Promise<SafeUserDto & { recipes: RecipeSummary[] }> {
+  ): Promise<UserWithRecipesDto> {
     return this.usersService.getUserProfile(data.id);
   }
 
   @MessagePattern(USERS_PATTERNS.UPDATE_USER)
   async updateUser(
-    @Payload() data: { id: string; updateUserDto: UpdateUserDto },
+    @Payload() data: { email: string; updateUserDto: UpdateUserDto },
   ): Promise<SafeUserDto> {
-    return this.usersService.updateUser(data.id, data.updateUserDto);
+    return this.usersService.updateUser(data.email, data.updateUserDto);
   }
 
-  @MessagePattern(USERS_PATTERNS.DEACTIVATE_USER)
-  async deactivateUser(@Payload() data: { id: string }): Promise<void> {
-    return this.usersService.deactivateUser(data.id);
+  @MessagePattern(USERS_PATTERNS.DELETE_USER)
+  async deleteUser(@Payload() data: { email: string }): Promise<void> {
+    await this.usersService.deleteUser(data.email);
   }
 
   @MessagePattern(USERS_PATTERNS.TEST)

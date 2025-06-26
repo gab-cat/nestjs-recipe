@@ -1,29 +1,33 @@
+import { HttpStatus, Injectable } from '@nestjs/common';
+import { PrismaService, AppConfigService } from '@app/shared';
 import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-} from '@nestjs/common';
-import { PrismaService } from '@app/shared';
-import {
-  LoginDto,
   RegisterDto,
   AuthResponse,
+  LoginDto,
   RefreshTokenDto,
   ChangePasswordDto,
-} from '@app/shared';
+} from './models/auth.dto';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class AuthService {
-  private readonly jwtSecret = process.env.JWT_SECRET || 'your-secret-key';
-  private readonly jwtRefreshSecret =
-    process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-key';
+  private readonly jwtSecret: string;
+  private readonly jwtRefreshSecret: string;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: AppConfigService,
+  ) {
+    const jwtConfig = this.configService.getJwtConfig();
+    this.jwtSecret = jwtConfig.secret;
+    this.jwtRefreshSecret = jwtConfig.refreshSecret;
+  }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
-    const { email, username, password, firstName, lastName } = registerDto;
+    const { email, username, password, firstName, lastName, bio, avatar } =
+      registerDto;
 
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
@@ -34,10 +38,16 @@ export class AuthService {
 
     if (existingUser) {
       if (existingUser.email === email) {
-        throw new ConflictException('Email already exists');
+        throw new RpcException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Email already exists',
+        });
       }
       if (existingUser.username === username) {
-        throw new ConflictException('Username already exists');
+        throw new RpcException({
+          statusCode: HttpStatus.CONFLICT,
+          message: 'Username already exists',
+        });
       }
     }
 
@@ -52,6 +62,8 @@ export class AuthService {
           username,
           firstName,
           lastName,
+          bio,
+          avatar,
         },
       });
 
@@ -93,7 +105,10 @@ export class AuthService {
     });
 
     if (!user || !user.isActive || !user.authCredentials) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid credentials',
+      });
     }
 
     // Verify password
@@ -103,7 +118,10 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid credentials',
+      });
     }
 
     // Generate tokens
@@ -136,7 +154,10 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
+        throw new RpcException({
+          statusCode: HttpStatus.UNAUTHORIZED,
+          message: 'User not found or inactive',
+        });
       }
 
       // Generate new tokens
@@ -153,7 +174,10 @@ export class AuthService {
         tokens,
       };
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid refresh token',
+      });
     }
   }
 
@@ -181,7 +205,10 @@ export class AuthService {
     });
 
     if (!user || !user.authCredentials) {
-      throw new UnauthorizedException('User not found');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'User not found',
+      });
     }
 
     // Verify current password
@@ -191,7 +218,10 @@ export class AuthService {
     );
 
     if (!isCurrentPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Current password is incorrect',
+      });
     }
 
     // Hash and store new password
@@ -202,7 +232,7 @@ export class AuthService {
     });
   }
 
-  async validateToken(token: string): Promise<any> {
+  async validateToken(token: string): Promise<AuthResponse> {
     try {
       const payload = jwt.verify(token, this.jwtSecret);
       const userId = payload.sub;
@@ -212,16 +242,30 @@ export class AuthService {
       });
 
       if (!user || !user.isActive) {
-        throw new UnauthorizedException('User not found or inactive');
+        throw new RpcException({
+          statusCode: HttpStatus.UNAUTHORIZED,
+          message: 'User not found or inactive',
+        });
       }
 
       return {
-        id: user.id,
-        email: user.email,
-        username: user.username,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+        },
+        tokens: {
+          accessToken: token,
+          refreshToken: token,
+        },
       };
     } catch {
-      throw new UnauthorizedException('Invalid token');
+      throw new RpcException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        message: 'Invalid token',
+      });
     }
   }
 

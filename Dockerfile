@@ -16,14 +16,14 @@ RUN bun install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
 COPY . .
 
-
-RUN bun install
 # Generate Prisma client for the target platform
 RUN bunx prisma generate
 
 # Build the shared library first, then all applications
+ENV NODE_ENV=production
 RUN bunx nest build shared
 RUN bun run build:all
 
@@ -31,7 +31,7 @@ RUN bun run build:all
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs

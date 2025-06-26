@@ -4,6 +4,7 @@ export const RECIPE_PATTERNS = {
   CREATE_RECIPE: { cmd: 'recipe.create' },
   FIND_ALL_RECIPES: { cmd: 'recipe.find_all' },
   FIND_RECIPE_BY_ID: { cmd: 'recipe.find_by_id' },
+  FIND_RECIPE_BY_SLUG: { cmd: 'recipe.find_by_slug' },
   FIND_RECIPES_BY_AUTHOR: { cmd: 'recipe.find_by_author' },
   UPDATE_RECIPE: { cmd: 'recipe.update' },
   DELETE_RECIPE: { cmd: 'recipe.delete' },

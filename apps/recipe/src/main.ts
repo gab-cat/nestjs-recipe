@@ -2,9 +2,14 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions } from '@nestjs/microservices';
 import { RecipeModule } from './recipe.module';
-import { RECIPE_SERVICE_CONFIG } from '@app/shared';
-
+import { AppConfigService, createTransportConfigs } from '@app/shared';
 async function bootstrap(): Promise<void> {
+  // Create a temporary app to get the config service
+  const tempApp = await NestFactory.create(RecipeModule);
+  const configService = tempApp.get(AppConfigService);
+  const { RECIPE_SERVICE_CONFIG } = createTransportConfigs(configService);
+  await tempApp.close();
+
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     RecipeModule,
     RECIPE_SERVICE_CONFIG,

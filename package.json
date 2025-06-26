@@ -29,6 +29,7 @@
     "build:users": "nest build users",
     "build:all": "concurrently \"npm run build:auth\" \"npm run build:recipe\" \"npm run build:users\" \"npm run build\"",
     "build:docker": "docker build -t nestjs-recipe .",
+    "dev:compose": "./scripts/dev-compose.sh",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

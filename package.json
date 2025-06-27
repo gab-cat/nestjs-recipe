@@ -1,6 +1,6 @@
 {
   "name": "nestjs-recipe",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "author": "",
   "private": true,
@@ -28,7 +28,7 @@
     "build:recipe": "nest build recipe",
     "build:users": "nest build users",
     "build:all": "concurrently \"npm run build:auth\" \"npm run build:recipe\" \"npm run build:users\" \"npm run build\"",
-    "build:docker": "docker build -t nestjs-recipe .",
+    "build:docker": "docker build -t gabcat/nestjs-recipe:latest .",
     "dev:compose": "./scripts/dev-compose.sh",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

@@ -1,43 +1,37 @@
 services:
   # Auth microservice
   auth-service:
-    image: nestjs-recipe
+    image: gabcat/nestjs-recipe:latest
     command: ['bun', '--bun', 'start:auth:prod']
     environment:
       - NODE_ENV=production
     env_file:
       - .env
-    networks:
-      - nestjs-recipe-network
     restart: unless-stopped
 
   # Recipe microservice
   recipe-service:
-    image: nestjs-recipe
+    image: gabcat/nestjs-recipe:latest
     command: ['bun', '--bun', 'start:recipe:prod']
     environment:
       - NODE_ENV=production
     env_file:
       - .env
-    networks:
-      - nestjs-recipe-network
     restart: unless-stopped
 
   # Users microservice
   users-service:
-    image: nestjs-recipe
+    image: gabcat/nestjs-recipe:latest
     command: ['bun', '--bun', 'start:users:prod']
     environment:
       - NODE_ENV=production
     env_file:
       - .env
-    networks:
-      - nestjs-recipe-network
     restart: unless-stopped
 
   # API Gateway
   api-gateway:
-    image: nestjs-recipe
+    image: gabcat/nestjs-recipe:latest
     command: ['bun', '--bun', 'start:gateway:prod']
     environment:
       - NODE_ENV=production
@@ -48,8 +42,6 @@ services:
       - .env
     ports:
       - '3000:3000'
-    networks:
-      - nestjs-recipe-network
     depends_on:
       - auth-service
       - recipe-service

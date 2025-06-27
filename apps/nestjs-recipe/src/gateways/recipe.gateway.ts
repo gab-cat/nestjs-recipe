@@ -216,8 +216,6 @@ export class RecipeGateway extends Gateway {
   }
 
   @Get('author/:email')
-  @UseGuards(HttpJwtAuthGuard)
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get recipes by author email',
     description:
@@ -226,9 +224,6 @@ export class RecipeGateway extends Gateway {
   @ApiOkResponse({
     description: 'Recipes successfully retrieved',
     type: [RecipeDto],
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Authentication required',
   })
   @ApiNotFoundResponse({
     description: 'Author not found',
@@ -253,14 +248,12 @@ export class RecipeGateway extends Gateway {
     type: Number,
   })
   async findRecipesByAuthor(
-    @Headers() headers: HeadersObject,
     @Param('email') email: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ): Promise<Recipe[]> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
-    const token = this.requireToken(headers);
 
     return firstValueFrom(
       this.microserviceLogger.logAndSend<Recipe[]>(
@@ -270,7 +263,6 @@ export class RecipeGateway extends Gateway {
           email,
           page: pageNum,
           limit: limitNum,
-          token,
         },
         'RecipeGateway.findRecipesByAuthor',
       ),

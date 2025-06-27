@@ -36,5 +36,5 @@ jobs:
           context: .
           file: ./Dockerfile
           tags: |
-            gabcat/nestjs-exercise:latest
+            gabcat/nestjs-recipe:latest
           push: true

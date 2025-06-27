@@ -7,14 +7,17 @@ A NestJS-based microservices application for sharing recipes, built with TypeScr
 This application is built using a microservices architecture with an API Gateway pattern:
 
 ### API Gateway
+
 - **Gateway** (Port 3000): HTTP API Gateway that routes requests to microservices
 
 ### Microservices (TCP Transport)
+
 - **Auth Service** (Port 4001): User authentication and authorization
-- **Recipe Service** (Port 4002): Recipe management and operations  
+- **Recipe Service** (Port 4002): Recipe management and operations
 - **Users Service** (Port 4003): User profile and management
 
 ### Communication
+
 - **Client to Gateway**: HTTP/REST
 - **Gateway to Services**: TCP with Message Patterns
 - **Inter-service Events**: Event Patterns for loose coupling
@@ -22,19 +25,26 @@ This application is built using a microservices architecture with an API Gateway
 ## 🚀 Features
 
 ### Recipe Management
+
 - Create, read, update, and delete recipes
 - Search recipes by name, description, or ingredients
 - Recipe categorization and tagging
 - Recipe reviews and ratings
 - Image support for recipes
+- Slug-based recipe URLs for SEO-friendly access
+- Recipe management by both ID and slug
 
 ### User Management
+
 - User registration and profile management
 - User search functionality
 - User deactivation
 - Profile with recent recipes
+- User lookup by email and username
+- Comprehensive user profile management
 
 ### Authentication
+
 - JWT-based authentication
 - Refresh token support
 - Password change functionality
@@ -49,12 +59,14 @@ This application is built using a microservices architecture with an API Gateway
 ## 🛠️ Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository-url>
    cd nestjs-recipe
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    # or
@@ -63,32 +75,34 @@ This application is built using a microservices architecture with an API Gateway
 
 3. **Set up environment variables:**
    Create a `.env` file in the root directory:
+
    ```env
    # Database
    DATABASE_URL="postgresql://username:password@localhost:5432/recipe_sharing?schema=public"
-   
+
    # JWT Secrets
    JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
    JWT_REFRESH_SECRET="your-super-secret-refresh-jwt-key-change-this-in-production"
-   
+
    # App Configuration
    NODE_ENV="development"
-   
+
    # Microservices Ports
-   AUTH_PORT=3001
-   RECIPE_PORT=3002
-   USERS_PORT=3003
+   AUTH_PORT=4001
+   RECIPE_PORT=4002
+   USERS_PORT=4003
    MAIN_PORT=3000
    ```
 
 4. **Set up the database:**
+
    ```bash
    # Generate Prisma client
    npm run db:generate
-   
+
    # Push schema to database (for development)
    npm run db:push
-   
+
    # Or run migrations (for production)
    npm run db:migrate
    ```
@@ -98,12 +112,14 @@ This application is built using a microservices architecture with an API Gateway
 ### Development Mode
 
 **Option 1: Run all services at once (Recommended):**
+
 ```bash
 # Start all microservices and API Gateway
 npm run start:all
 ```
 
 **Option 2: Run services individually:**
+
 ```bash
 # Terminal 1 - All Microservices
 npm run start:microservices
@@ -113,11 +129,12 @@ npm run start:gateway
 ```
 
 **Option 3: Run each service separately:**
+
 ```bash
 # Terminal 1 - Auth Service
 npm run start:auth
 
-# Terminal 2 - Recipe Service  
+# Terminal 2 - Recipe Service
 npm run start:recipe
 
 # Terminal 3 - Users Service
@@ -130,6 +147,7 @@ npm run start:gateway
 ### Production Mode
 
 1. **Build all services:**
+
    ```bash
    npm run build:auth
    npm run build:recipe
@@ -151,53 +169,55 @@ All endpoints are accessible through the API Gateway at `http://localhost:3000`.
 ### 🔑 Authentication
 
 Most endpoints require authentication. Include the JWT token in the Authorization header:
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
 
 ### 🔐 Authentication Endpoints
 
-| Method | Endpoint | Auth Required | Request Body | Query Params | Response |
-|--------|----------|---------------|--------------|--------------|----------|
-| `POST` | `/api/v1/auth/register` | ❌ | `{ email, username, password, firstName?, lastName? }` | - | `{ user, tokens }` |
-| `POST` | `/api/v1/auth/login` | ❌ | `{ email, password }` | - | `{ user, tokens }` |
-| `POST` | `/api/v1/auth/refresh` | ❌ | `{ refreshToken }` | - | `{ user, tokens }` |
-| `POST` | `/api/v1/auth/logout` | ✅ | `{ refreshToken }` | - | `{ message }` |
-| `POST` | `/api/v1/auth/change-password` | ✅ | `{ currentPassword, newPassword }` | - | `{ message }` |
-| `POST` | `/api/v1/auth/validate` | ❌ | `{ token }` | - | `{ id, email, username }` |
-| `GET` | `/api/v1/auth/test` | ❌ | - | - | `{ message }` |
+| Method | Endpoint                       | Auth Required | Request Body                                                          | Query Params | Response                  |
+| ------ | ------------------------------ | ------------- | --------------------------------------------------------------------- | ------------ | ------------------------- |
+| `POST` | `/api/v1/auth/register`        | ❌            | `{ email, username, password, firstName?, lastName?, bio?, avatar? }` | -            | `{ user, tokens }`        |
+| `POST` | `/api/v1/auth/login`           | ❌            | `{ email, password }`                                                 | -            | `{ user, tokens }`        |
+| `POST` | `/api/v1/auth/refresh`         | ❌            | `{ refreshToken }`                                                    | -            | `{ user, tokens }`        |
+| `POST` | `/api/v1/auth/logout`          | ✅            | `{ refreshToken }`                                                    | -            | `{ message }`             |
+| `POST` | `/api/v1/auth/change-password` | ✅            | `{ currentPassword, newPassword }`                                    | -            | `{ message }`             |
+| `POST` | `/api/v1/auth/validate`        | ❌            | `{ token }`                                                           | -            | `{ id, email, username }` |
+| `GET`  | `/api/v1/auth/test`            | ❌            | -                                                                     | -            | `{ message }`             |
 
 ### 🍳 Recipe Endpoints
 
-| Method | Endpoint | Auth Required | Request Body | Query Params | Path Params | Response |
-|--------|----------|---------------|--------------|--------------|-------------|----------|
-| `GET` | `/api/v1/recipes` | ❌ | - | `page?, limit?` | - | `Recipe[]` |
-| `GET` | `/api/v1/recipes/{id}` | ❌ | - | - | `id` | `Recipe` |
-| `POST` | `/api/v1/recipes` | ✅ | `{ name, description?, ingredients[], instructions[], cookingTime, servings, image? }` | - | - | `Recipe` |
-| `PATCH` | `/api/v1/recipes/{id}` | ✅ | `{ name?, description?, ingredients[]?, instructions[]?, cookingTime?, servings?, image? }` | - | `id` | `Recipe` |
-| `DELETE` | `/api/v1/recipes/{id}` | ✅ | - | - | `id` | `{ message }` |
-| `GET` | `/api/v1/recipes/search` | ❌ | - | `q, page?, limit?` | - | `Recipe[]` |
-| `GET` | `/api/v1/recipes/author/{authorId}` | ❌ | - | `page?, limit?` | `authorId` | `Recipe[]` |
-| `GET` | `/api/v1/recipes/test` | ❌ | - | - | - | `{ message }` |
+| Method   | Endpoint                         | Auth Required | Request Body                                                                                | Query Params       | Path Params | Response      |
+| -------- | -------------------------------- | ------------- | ------------------------------------------------------------------------------------------- | ------------------ | ----------- | ------------- |
+| `GET`    | `/api/v1/recipes`                | ❌            | -                                                                                           | `page?, limit?`    | -           | `Recipe[]`    |
+| `GET`    | `/api/v1/recipes/{id}`           | ❌            | -                                                                                           | -                  | `id`        | `Recipe`      |
+| `GET`    | `/api/v1/recipes/slug/{slug}`    | ❌            | -                                                                                           | -                  | `slug`      | `Recipe`      |
+| `POST`   | `/api/v1/recipes`                | ✅            | `{ name, description?, ingredients[], instructions[], cookingTime, servings, image? }`      | -                  | -           | `Recipe`      |
+| `PATCH`  | `/api/v1/recipes/slug/{slug}`    | ✅            | `{ name?, description?, ingredients[]?, instructions[]?, cookingTime?, servings?, image? }` | -                  | `slug`      | `Recipe`      |
+| `DELETE` | `/api/v1/recipes/slug/{slug}`    | ✅            | -                                                                                           | -                  | `slug`      | `{ message }` |
+| `GET`    | `/api/v1/recipes/search`         | ❌            | -                                                                                           | `q, page?, limit?` | -           | `Recipe[]`    |
+| `GET`    | `/api/v1/recipes/author/{email}` | ❌            | -                                                                                           | `page?, limit?`    | `email`     | `Recipe[]`    |
+| `GET`    | `/api/v1/recipes/test`           | ❌            | -                                                                                           | -                  | -           | `{ message }` |
 
 ### 👥 User Endpoints
 
-| Method | Endpoint | Auth Required | Request Body | Query Params | Path Params | Response |
-|--------|----------|---------------|--------------|--------------|-------------|----------|
-| `GET` | `/api/v1/users` | ✅ | - | `page?, limit?` | - | `SafeUser[]` |
-| `GET` | `/api/v1/users/{id}` | ❌ | - | - | `id` | `SafeUser` |
-| `POST` | `/api/v1/users` | ❌ | `{ email, username, firstName?, lastName?, bio?, avatar? }` | - | - | `SafeUser` |
-| `PATCH` | `/api/v1/users/{id}` | ✅ | `{ firstName?, lastName?, bio?, avatar? }` | - | `id` | `SafeUser` |
-| `DELETE` | `/api/v1/users/{id}` | ✅ | - | - | `id` | `{ message }` |
-| `GET` | `/api/v1/users/search` | ✅ | - | `q, page?, limit?` | - | `SafeUser[]` |
-| `GET` | `/api/v1/users/username/{username}` | ❌ | - | - | `username` | `SafeUser` |
-| `GET` | `/api/v1/users/profile/{id}` | ✅ | - | - | `id` | `UserWithRecipes` |
-| `GET` | `/api/v1/users/email/{email}` | ❌ | - | - | `email` | `User \| null` |
-| `GET` | `/api/v1/users/test` | ❌ | - | - | - | `{ message }` |
+| Method   | Endpoint                            | Auth Required | Request Body                               | Query Params       | Path Params | Response          |
+| -------- | ----------------------------------- | ------------- | ------------------------------------------ | ------------------ | ----------- | ----------------- |
+| `GET`    | `/api/v1/users`                     | ✅            | -                                          | `page?, limit?`    | -           | `SafeUser[]`      |
+| `GET`    | `/api/v1/users/{id}`                | ❌            | -                                          | -                  | `id`        | `SafeUser`        |
+| `PATCH`  | `/api/v1/users/email/{email}`       | ✅            | `{ firstName?, lastName?, bio?, avatar? }` | -                  | `email`     | `SafeUser`        |
+| `DELETE` | `/api/v1/users/email/{email}`       | ✅            | -                                          | -                  | `email`     | `{ message }`     |
+| `GET`    | `/api/v1/users/search`              | ✅            | -                                          | `q, page?, limit?` | -           | `SafeUser[]`      |
+| `GET`    | `/api/v1/users/username/{username}` | ❌            | -                                          | -                  | `username`  | `SafeUser`        |
+| `GET`    | `/api/v1/users/profile/{id}`        | ✅            | -                                          | -                  | `id`        | `UserWithRecipes` |
+| `GET`    | `/api/v1/users/email/{email}`       | ❌            | -                                          | -                  | `email`     | `User \| null`    |
+| `GET`    | `/api/v1/users/test`                | ❌            | -                                          | -                  | -           | `{ message }`     |
 
 ### 📋 Request Body Schemas
 
 #### Authentication
+
 ```typescript
 // Register/Login
 RegisterDto = {
@@ -206,6 +226,8 @@ RegisterDto = {
   password: string;
   firstName?: string;
   lastName?: string;
+  bio?: string;
+  avatar?: string;
 }
 
 LoginDto = {
@@ -225,6 +247,7 @@ ChangePasswordDto = {
 ```
 
 #### Recipe
+
 ```typescript
 CreateRecipeDto = {
   name: string;
@@ -248,16 +271,8 @@ UpdateRecipeDto = {
 ```
 
 #### User
-```typescript
-CreateUserDto = {
-  email: string;
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  bio?: string;
-  avatar?: string;
-}
 
+```typescript
 UpdateUserDto = {
   firstName?: string;
   lastName?: string;
@@ -269,6 +284,7 @@ UpdateUserDto = {
 ### 📊 Response Schemas
 
 #### Authentication Response
+
 ```typescript
 AuthResponse = {
   user: {
@@ -286,6 +302,7 @@ AuthResponse = {
 ```
 
 #### Recipe Response
+
 ```typescript
 Recipe = {
   id: string;
@@ -310,6 +327,7 @@ Recipe = {
 ```
 
 #### User Response
+
 ```typescript
 SafeUser = {
   id: string;
@@ -335,24 +353,24 @@ UserWithRecipes = SafeUser & {
 
 ### 📋 Query Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `page` | `number` | `1` | Page number for pagination |
-| `limit` | `number` | `10` | Number of items per page |
-| `q` | `string` | - | Search query string |
+| Parameter | Type     | Default | Description                |
+| --------- | -------- | ------- | -------------------------- |
+| `page`    | `number` | `1`     | Page number for pagination |
+| `limit`   | `number` | `10`    | Number of items per page   |
+| `q`       | `string` | -       | Search query string        |
 
 ### 🚨 HTTP Status Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `200` | OK | Request successful |
-| `201` | Created | Resource created successfully |
-| `400` | Bad Request | Invalid request data |
-| `401` | Unauthorized | Authentication required or token invalid |
-| `403` | Forbidden | Access denied |
-| `404` | Not Found | Resource not found |
-| `409` | Conflict | Resource already exists |
-| `500` | Internal Server Error | Server error |
+| Code  | Status                | Description                              |
+| ----- | --------------------- | ---------------------------------------- |
+| `200` | OK                    | Request successful                       |
+| `201` | Created               | Resource created successfully            |
+| `400` | Bad Request           | Invalid request data                     |
+| `401` | Unauthorized          | Authentication required or token invalid |
+| `403` | Forbidden             | Access denied                            |
+| `404` | Not Found             | Resource not found                       |
+| `409` | Conflict              | Resource already exists                  |
+| `500` | Internal Server Error | Server error                             |
 
 ### 🚨 Error Response Format
 
@@ -365,6 +383,7 @@ UserWithRecipes = SafeUser & {
 ```
 
 **Common Error Messages:**
+
 - `"Invalid credentials"` - Wrong email/password
 - `"Email already exists"` - Registration with existing email
 - `"Username already exists"` - Registration with existing username
@@ -431,18 +450,37 @@ npm run test:cov
 ```
 nestjs-recipe/
 ├── apps/
-│   ├── auth/           # Auth microservice
-│   ├── recipe/         # Recipe microservice
-│   ├── users/          # Users microservice
-│   └── nestjs-recipe/  # Main application
+│   ├── auth/           # Auth microservice (Port 4001)
+│   ├── recipe/         # Recipe microservice (Port 4002)
+│   ├── users/          # Users microservice (Port 4003)
+│   └── nestjs-recipe/  # API Gateway (Port 3000)
+│       └── src/
+│           ├── gateways/    # HTTP controllers that proxy to microservices
+│           │   ├── auth.gateway.ts    # Auth endpoints
+│           │   ├── recipe.gateway.ts  # Recipe endpoints with slug support
+│           │   └── users.gateway.ts   # User endpoints with email lookup
+│           └── app.module.ts          # Main gateway module
 ├── libs/
 │   └── shared/         # Shared types, services, and utilities
+│       ├── config/     # Configuration modules
+│       ├── guards/     # Authentication guards
+│       ├── patterns/   # Microservice message patterns
+│       └── services/   # Shared services
 ├── prisma/
 │   └── schema.prisma   # Database schema
 ├── generated/
 │   └── prisma/         # Generated Prisma client
 └── ...
 ```
+
+## 🔄 API Gateway Pattern
+
+The application uses an **API Gateway pattern** where:
+
+- **API Gateway** (`nestjs-recipe`) acts as a single entry point for all client requests
+- **Gateway Controllers** in `/apps/nestjs-recipe/src/gateways/` proxy HTTP requests to microservices
+- **Microservices** communicate via TCP transport using message patterns
+- Each microservice handles its own domain logic and data persistence
 
 ## 🔐 Security Notes
 
